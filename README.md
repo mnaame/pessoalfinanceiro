@@ -62,11 +62,36 @@ Os valores são armazenados em **centavos (inteiros)** para evitar erros de arre
 
 Quanto mais meses você registrar, mais precisa fica a média.
 
-## Dicas para colocar em produção
+## Colocando na internet
 
-- **Hospedagem**: qualquer serviço que rode Node serve — [Render](https://render.com),
-  [Railway](https://railway.app), [Fly.io](https://fly.io) ou uma VPS pequena.
-  Configure um **disco persistente** para a pasta `data/` (é onde vive o banco).
+### Teste rápido (link temporário a partir do seu PC)
+
+Com o servidor rodando (`npm start`), abra **outro** terminal e rode:
+
+```bash
+npx localtunnel --port 3000
+```
+
+Ele imprime um link `https://…loca.lt` que qualquer pessoa pode abrir enquanto
+seu computador estiver ligado. Ao abrir pela primeira vez, o visitante confirma
+uma tela de aviso do serviço e pronto.
+
+### Hospedagem permanente (Render)
+
+O repositório já traz um `render.yaml` pronto:
+
+1. Crie uma conta em [render.com](https://render.com) entrando com o GitHub.
+2. **New +** → **Blueprint** → selecione o repositório `pessoalfinanceiro`.
+3. Confirme e aguarde o deploy — o site fica em `https://meu-financeiro….onrender.com`.
+
+⚠️ No plano **Free** o serviço hiberna após ~15 min sem uso (o primeiro acesso
+demora um pouco) e **os dados são apagados a cada deploy/reinício** — bom para
+demonstrar, ruim para valer. Para uso real, assine uma instância paga com
+**disco persistente** montado em `/var/data` e defina `DATA_DIR=/var/data`
+(instruções comentadas no próprio `render.yaml`), ou use
+[Railway](https://railway.app)/[Fly.io](https://fly.io) com volume.
+
+### Outras dicas de produção
 - **HTTPS é obrigatório** em produção (o cookie de sessão trafega nas requisições).
   Essas plataformas já entregam HTTPS automaticamente; numa VPS, use Caddy ou
   Nginx + Let's Encrypt na frente.

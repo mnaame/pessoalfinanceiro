@@ -1,0 +1,22 @@
+# Configuração de deploy no Render (https://render.com)
+# No painel: New + → Blueprint → conecte este repositório.
+services:
+  - type: web
+    name: meu-financeiro
+    runtime: node
+    plan: free
+    buildCommand: 'echo "sem build - zero dependencias"'
+    startCommand: node server.js
+    envVars:
+      - key: NODE_VERSION
+        value: 22.17.0
+      - key: NODE_ENV
+        value: production
+    # ⚠️ No plano Free o disco é apagado a cada deploy/reinício (os dados somem).
+    # Para manter os dados de verdade, use uma instância paga e descomente:
+    # disk:
+    #   name: dados
+    #   mountPath: /var/data
+    # e acrescente em envVars:
+    #   - key: DATA_DIR
+    #     value: /var/data
