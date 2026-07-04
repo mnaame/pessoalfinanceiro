@@ -55,7 +55,7 @@ Os valores são armazenados em **centavos (inteiros)** para evitar erros de arre
 
 1. Média de receitas e despesas dos últimos 3 meses com lançamentos.
 2. Para cada mês futuro, soma-se o valor das parcelas que vencem naquele mês
-   (1º vencimento + parcelas já pagas determinam o cronograma restante).
+   (a data da próxima parcela + quantas faltam determinam o cronograma restante).
 3. `sobra do mês = receita média − despesa média − parcelas do mês`.
 4. O **ponto de virada** é o mês seguinte à última parcela; o site também aponta
    o primeiro mês projetado com sobra positiva e o acumulado mês a mês.

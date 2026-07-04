@@ -227,12 +227,12 @@ $('#form-inst').addEventListener('submit', async (e) => {
       installment_cents: cents,
       total_installments: Number(f.total.value),
       paid_installments: Number(f.paid.value || 0),
-      first_due_date: f.first_due.value,
+      next_due_date: f.next_due.value,
     }),
   });
   f.reset();
   f.paid.value = 0;
-  f.first_due.value = defaultDate();
+  f.next_due.value = defaultDate();
   loadInstallments();
 });
 
@@ -307,6 +307,6 @@ $('#btn-logout').addEventListener('click', async () => {
   } catch { return; }
   syncMonthPickers();
   document.querySelector('#form-tx [name=date]').value = defaultDate();
-  document.querySelector('#form-inst [name=first_due]').value = defaultDate();
+  document.querySelector('#form-inst [name=next_due]').value = defaultDate();
   refresh('overview');
 })();
