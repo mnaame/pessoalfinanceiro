@@ -1,0 +1,77 @@
+# 💰 Meu Financeiro
+
+Site de controle financeiro pessoal — a evolução do seu bloco de notas do iPhone.
+Login de usuários, resumo do mês, controle de parcelas e **projeção da data em que
+você vai estar melhor financeiramente**.
+
+![Node >= 22.5](https://img.shields.io/badge/node-%E2%89%A522.5-blue)
+
+## O que ele faz
+
+- **Login e cadastro de usuários** — senha criptografada (scrypt) e sessão por cookie seguro (HttpOnly).
+- **Dados do mês** — receitas, despesas, parcelas do mês e a sobra final, com seletor de mês.
+- **Lançamentos** — registre cada receita e despesa com categoria, data e marcação de "fixo" (repete todo mês).
+- **Parcelas** — cadastre compras parceladas e financiamentos: quantas já pagou, quantas faltam,
+  valor restante, mês da próxima parcela e mês em que termina. Botão "Pagar parcela" a cada mês.
+- **Projeção financeira** — com a média dos seus últimos 3 meses e o cronograma das parcelas,
+  o site mostra **o mês em que sua última parcela é quitada** e o primeiro mês com sobra positiva,
+  com gráfico mês a mês.
+- **Gráficos** — receitas × despesas dos últimos 6 meses e despesas por categoria, com modo escuro automático.
+
+## Como rodar
+
+Só precisa do [Node.js 22.5+](https://nodejs.org) — **nenhuma dependência para instalar**
+(o banco SQLite já vem embutido no Node).
+
+```bash
+node server.js
+# abra http://localhost:3000
+```
+
+Variáveis opcionais:
+
+| Variável   | Padrão   | Para quê                          |
+|------------|----------|-----------------------------------|
+| `PORT`     | `3000`   | Porta do servidor                 |
+| `DATA_DIR` | `./data` | Onde fica o banco `financeiro.db` |
+
+## Estrutura
+
+```
+server.js          # servidor HTTP + arquivos estáticos
+lib/db.js          # banco SQLite (schema criado automaticamente)
+lib/auth.js        # senhas (scrypt), sessões e cookies
+lib/api.js         # rotas da API + cálculo da projeção
+public/login.html  # tela de login e cadastro
+public/index.html  # painel (visão geral, lançamentos, parcelas, projeção)
+public/app.js      # lógica do painel
+public/charts.js   # gráficos em SVG puro
+public/styles.css  # tema claro/escuro
+```
+
+Os valores são armazenados em **centavos (inteiros)** para evitar erros de arredondamento.
+
+## Como a projeção é calculada
+
+1. Média de receitas e despesas dos últimos 3 meses com lançamentos.
+2. Para cada mês futuro, soma-se o valor das parcelas que vencem naquele mês
+   (1º vencimento + parcelas já pagas determinam o cronograma restante).
+3. `sobra do mês = receita média − despesa média − parcelas do mês`.
+4. O **ponto de virada** é o mês seguinte à última parcela; o site também aponta
+   o primeiro mês projetado com sobra positiva e o acumulado mês a mês.
+
+Quanto mais meses você registrar, mais precisa fica a média.
+
+## Dicas para colocar em produção
+
+- **Hospedagem**: qualquer serviço que rode Node serve — [Render](https://render.com),
+  [Railway](https://railway.app), [Fly.io](https://fly.io) ou uma VPS pequena.
+  Configure um **disco persistente** para a pasta `data/` (é onde vive o banco).
+- **HTTPS é obrigatório** em produção (o cookie de sessão trafega nas requisições).
+  Essas plataformas já entregam HTTPS automaticamente; numa VPS, use Caddy ou
+  Nginx + Let's Encrypt na frente.
+- **Backup**: o banco é um único arquivo (`data/financeiro.db`). Copie-o
+  periodicamente (ex.: cron diário para um bucket ou outra máquina).
+- **Migração do bloco de notas**: cadastre primeiro as parcelas em aberto (com o
+  campo "parcelas já pagas") e depois registre 2–3 meses de receitas/despesas —
+  a projeção já nasce útil.

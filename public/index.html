@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Meu Financeiro</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark">R$</span> Meu Financeiro</div>
+    <div class="userbox">
+      <span id="user-name"></span>
+      <button class="btn ghost small" id="btn-logout">Sair</button>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <button data-view="overview" class="active">Visão geral</button>
+    <button data-view="transactions">Lançamentos</button>
+    <button data-view="installments">Parcelas</button>
+    <button data-view="projection">Projeção</button>
+  </nav>
+
+  <main>
+    <!-- ===== VISÃO GERAL ===== -->
+    <section class="view active" id="view-overview">
+      <div class="toolbar">
+        <h2>Resumo do mês</h2>
+        <input type="month" id="month-picker">
+      </div>
+
+      <div class="grid-tiles">
+        <div class="card tile">
+          <div class="label">Receitas do mês</div>
+          <div class="value" id="tile-income">—</div>
+        </div>
+        <div class="card tile">
+          <div class="label">Despesas do mês</div>
+          <div class="value" id="tile-expense">—</div>
+        </div>
+        <div class="card tile">
+          <div class="label">Parcelas do mês</div>
+          <div class="value" id="tile-installments">—</div>
+          <div class="hint" id="tile-installments-hint"></div>
+        </div>
+        <div class="card tile">
+          <div class="label">Sobra do mês</div>
+          <div class="value" id="tile-balance">—</div>
+          <div class="hint">receitas − despesas − parcelas</div>
+        </div>
+      </div>
+
+      <div class="card highlight" id="overview-projection">
+        <h3>📈 Sua virada financeira</h3>
+        <p id="overview-projection-text">Carregando…</p>
+      </div>
+
+      <div class="grid-2">
+        <div class="card chart-card">
+          <h3>Receitas × despesas</h3>
+          <p class="sub">Últimos 6 meses</p>
+          <div id="chart-flow"></div>
+        </div>
+        <div class="card chart-card">
+          <h3>Despesas por categoria</h3>
+          <p class="sub" id="chart-cat-sub">Neste mês</p>
+          <div id="chart-categories"></div>
+        </div>
+      </div>
+
+      <div class="spacer"></div>
+
+      <div class="card">
+        <h3 style="margin:0 0 10px;font-size:15px">Parcelas com vencimento neste mês</h3>
+        <div class="table-wrap" id="due-list"></div>
+      </div>
+    </section>
+
+    <!-- ===== LANÇAMENTOS ===== -->
+    <section class="view" id="view-transactions">
+      <div class="toolbar">
+        <h2>Lançamentos</h2>
+        <input type="month" id="tx-month-picker">
+      </div>
+
+      <div class="card" style="margin-bottom:16px">
+        <form id="form-tx">
+          <div class="form-row">
+            <label class="field">Tipo
+              <select name="type">
+                <option value="despesa">Despesa</option>
+                <option value="receita">Receita</option>
+              </select>
+            </label>
+            <label class="field" style="flex:2">Descrição
+              <input name="description" required maxlength="120" placeholder="Ex.: Salário, Mercado, Aluguel…">
+            </label>
+            <label class="field">Categoria
+              <input name="category" list="categories" maxlength="40" placeholder="Ex.: Moradia">
+            </label>
+            <label class="field">Valor (R$)
+              <input name="amount" required inputmode="decimal" placeholder="0,00">
+            </label>
+            <label class="field">Data
+              <input name="date" type="date" required>
+            </label>
+          </div>
+          <div class="form-row" style="align-items:center">
+            <label class="check"><input type="checkbox" name="recurring"> Repete todo mês (fixo)</label>
+            <button class="btn" type="submit">Adicionar</button>
+          </div>
+        </form>
+        <datalist id="categories">
+          <option value="Moradia"><option value="Alimentação"><option value="Transporte">
+          <option value="Saúde"><option value="Lazer"><option value="Educação">
+          <option value="Contas"><option value="Salário"><option value="Extra"><option value="Outros">
+        </datalist>
+      </div>
+
+      <div class="card">
+        <div class="table-wrap" id="tx-list"></div>
+      </div>
+    </section>
+
+    <!-- ===== PARCELAS ===== -->
+    <section class="view" id="view-installments">
+      <div class="toolbar"><h2>Compras parceladas e financiamentos</h2></div>
+
+      <div class="card" style="margin-bottom:16px">
+        <form id="form-inst">
+          <div class="form-row">
+            <label class="field" style="flex:2">Descrição
+              <input name="description" required maxlength="120" placeholder="Ex.: Celular, Carro, Cartão…">
+            </label>
+            <label class="field">Categoria
+              <input name="category" list="categories" maxlength="40">
+            </label>
+            <label class="field">Valor da parcela (R$)
+              <input name="installment" required inputmode="decimal" placeholder="0,00">
+            </label>
+          </div>
+          <div class="form-row">
+            <label class="field">Total de parcelas
+              <input name="total" type="number" min="1" max="480" required placeholder="12">
+            </label>
+            <label class="field">Parcelas já pagas
+              <input name="paid" type="number" min="0" value="0">
+            </label>
+            <label class="field">1º vencimento
+              <input name="first_due" type="date" required>
+            </label>
+            <button class="btn" type="submit" style="align-self:flex-end">Adicionar</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="card">
+        <div class="table-wrap" id="inst-list"></div>
+      </div>
+    </section>
+
+    <!-- ===== PROJEÇÃO ===== -->
+    <section class="view" id="view-projection">
+      <div class="toolbar"><h2>Quando vou estar melhor?</h2></div>
+
+      <div class="card highlight" id="projection-summary">
+        <h3>📅 Sua projeção</h3>
+        <p id="projection-text">Carregando…</p>
+      </div>
+
+      <div class="grid-tiles">
+        <div class="card tile">
+          <div class="label">Receita média mensal</div>
+          <div class="value" id="proj-income">—</div>
+          <div class="hint" id="proj-sample"></div>
+        </div>
+        <div class="card tile">
+          <div class="label">Despesa média mensal</div>
+          <div class="value" id="proj-expense">—</div>
+        </div>
+        <div class="card tile">
+          <div class="label">Total restante em parcelas</div>
+          <div class="value" id="proj-debt">—</div>
+          <div class="hint" id="proj-debt-hint"></div>
+        </div>
+        <div class="card tile">
+          <div class="label">Sobra mensal sem parcelas</div>
+          <div class="value" id="proj-gain">—</div>
+          <div class="hint">quando tudo estiver quitado</div>
+        </div>
+      </div>
+
+      <div class="card chart-card">
+        <h3>Projeção mês a mês</h3>
+        <p class="sub">Sobra estimada e carga de parcelas nos próximos meses — passe o mouse para detalhes</p>
+        <div id="chart-projection"></div>
+      </div>
+
+      <div class="spacer"></div>
+      <div class="card">
+        <h3 style="margin:0 0 6px;font-size:15px">Como calculamos</h3>
+        <p style="margin:0;color:var(--ink-2);font-size:14px">
+          A projeção usa a média de receitas e despesas dos seus últimos 3 meses de lançamentos e
+          desconta, mês a mês, as parcelas que ainda faltam pagar. Conforme os parcelamentos terminam,
+          sua sobra mensal aumenta — a data em que a última parcela é quitada é o seu ponto de virada.
+          Quanto mais meses você registrar, mais precisa fica a estimativa.
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <script src="/charts.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>
