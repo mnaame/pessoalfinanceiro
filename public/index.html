@@ -7,22 +7,49 @@
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
-  <header class="topbar">
-    <div class="brand"><span class="brand-mark">R$</span> Meu Financeiro</div>
-    <div class="userbox">
-      <span id="user-name"></span>
-      <button class="btn ghost small" id="btn-logout">Sair</button>
+  <aside class="sidebar" id="sidebar">
+    <div class="side-brand">
+      <span class="brand-mark">R$</span>
+      <span class="side-label brand-name">Meu Financeiro</span>
     </div>
-  </header>
 
-  <nav class="tabs">
-    <button data-view="overview" class="active">Visão geral</button>
-    <button data-view="transactions">Lançamentos</button>
-    <button data-view="installments">Parcelas</button>
-    <button data-view="projection">Projeção</button>
-  </nav>
+    <nav class="side-nav">
+      <button class="nav-item active" data-view="overview" title="Visão geral">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+        <span class="side-label">Visão geral</span>
+      </button>
+      <button class="nav-item" data-view="transactions" title="Lançamentos">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v13"/><path d="m4 14 3 3 3-3"/><path d="M17 20V7"/><path d="m14 10 3-3 3 3"/></svg>
+        <span class="side-label">Lançamentos</span>
+      </button>
+      <button class="nav-item" data-view="installments" title="Parcelas">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2.5"/><path d="M2 10h20"/><path d="M6 15h4"/></svg>
+        <span class="side-label">Parcelas</span>
+      </button>
+      <button class="nav-item" data-view="projection" title="Projeção">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 17 6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg>
+        <span class="side-label">Projeção</span>
+      </button>
+    </nav>
 
-  <main>
+    <div class="side-bottom">
+      <button class="nav-item" id="btn-logout" title="Sair">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></svg>
+        <span class="side-label">Sair</span>
+      </button>
+      <button class="nav-item" id="btn-collapse" title="Recolher menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="chevron"><path d="m15 6-6 6 6 6"/></svg>
+        <span class="side-label">Recolher</span>
+      </button>
+    </div>
+  </aside>
+
+  <div class="content">
+    <header class="topbar">
+      <span class="userbox" id="user-name"></span>
+    </header>
+
+    <main>
     <!-- ===== VISÃO GERAL ===== -->
     <section class="view active" id="view-overview">
       <div class="toolbar">
@@ -214,7 +241,8 @@
         </p>
       </div>
     </section>
-  </main>
+    </main>
+  </div>
 
   <script src="/charts.js"></script>
   <script src="/app.js"></script>

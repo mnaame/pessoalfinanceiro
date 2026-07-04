@@ -43,9 +43,9 @@ function fmtDate(iso) {
 }
 
 /* ---------- navegação ---------- */
-document.querySelectorAll('nav.tabs button').forEach((btn) => {
+document.querySelectorAll('.side-nav .nav-item').forEach((btn) => {
   btn.addEventListener('click', () => {
-    document.querySelectorAll('nav.tabs button').forEach((b) => b.classList.remove('active'));
+    document.querySelectorAll('.side-nav .nav-item').forEach((b) => b.classList.remove('active'));
     document.querySelectorAll('section.view').forEach((v) => v.classList.remove('active'));
     btn.classList.add('active');
     $('#view-' + btn.dataset.view).classList.add('active');
@@ -54,8 +54,15 @@ document.querySelectorAll('nav.tabs button').forEach((btn) => {
 });
 
 function activeView() {
-  return document.querySelector('nav.tabs button.active').dataset.view;
+  return document.querySelector('.side-nav .nav-item.active').dataset.view;
 }
+
+/* menu lateral: recolher/expandir (preferência lembrada) */
+if (localStorage.getItem('navCollapsed') === '1') document.body.classList.add('nav-collapsed');
+$('#btn-collapse').addEventListener('click', () => {
+  const collapsed = document.body.classList.toggle('nav-collapsed');
+  localStorage.setItem('navCollapsed', collapsed ? '1' : '0');
+});
 
 /* ---------- visão geral ---------- */
 async function loadOverview() {
