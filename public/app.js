@@ -21,10 +21,12 @@ async function api(path, options = {}) {
   return body;
 }
 
-/* Converte "1.234,56" / "1234,56" / "1234.56" em centavos. */
+/* Converte "1.234,56" / "1234,56" / "2.500" / "1234.56" em centavos. */
 function parseMoney(str) {
   let s = String(str).trim().replace(/\s|R\$/g, '');
   if (s.includes(',')) s = s.replace(/\./g, '').replace(',', '.');
+  // ponto como separador de milhar sem vírgula: "2.500" → 2500
+  else if (/^\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, '');
   const n = Number(s);
   if (!Number.isFinite(n) || n <= 0) return null;
   return Math.round(n * 100);
