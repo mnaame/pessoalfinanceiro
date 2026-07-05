@@ -334,5 +334,26 @@ const Charts = (() => {
     hover.addEventListener('mouseleave', () => { cross.setAttribute('opacity', 0); hideTip(tip); });
   }
 
-  return { groupedColumns, categoryBars, projectionChart, wealthChart, money, moneyShort, monthLabel };
+  /* === 5. Sparkline: mini-linha de tendência (sem eixos) === */
+  function sparkline(container, values, color) {
+    container.innerHTML = '';
+    if (!values || values.length < 2) return;
+    const W = 120, H = 32, pad = 3;
+    const min = Math.min(...values), max = Math.max(...values);
+    const span = max - min || 1;
+    const x = (i) => pad + (i / (values.length - 1)) * (W - pad * 2);
+    const y = (v) => pad + (1 - (v - min) / span) * (H - pad * 2);
+    const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, width: W, height: H, 'aria-hidden': 'true' });
+    el('path', {
+      d: values.map((v, i) => `${i ? 'L' : 'M'} ${x(i).toFixed(1)} ${y(v).toFixed(1)}`).join(' '),
+      fill: 'none', stroke: color, 'stroke-width': 1.5,
+      'stroke-linejoin': 'round', 'stroke-linecap': 'round',
+    }, svg);
+    const lx = x(values.length - 1), ly = y(values[values.length - 1]);
+    el('circle', { cx: lx, cy: ly, r: 3.5, fill: css('--surface') }, svg);
+    el('circle', { cx: lx, cy: ly, r: 2.2, fill: color }, svg);
+    container.appendChild(svg);
+  }
+
+  return { groupedColumns, categoryBars, projectionChart, wealthChart, sparkline, money, moneyShort, monthLabel };
 })();

@@ -38,8 +38,11 @@
   --side-w-min: 64px;
 }
 
+/* Tema escuro: aplicado pela preferência do sistema (a menos que o usuário
+   force o claro) OU por escolha manual via data-theme="dark".
+   ⚠️ Os dois blocos abaixo devem permanecer idênticos. */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --page: #0d0d0d;
     --surface: #1a1a19;
     --ink: #f5f5f7;
@@ -65,6 +68,33 @@
 
     --blur-bg: rgba(26, 26, 25, 0.72);
   }
+}
+
+:root[data-theme="dark"] {
+  --page: #0d0d0d;
+  --surface: #1a1a19;
+  --ink: #f5f5f7;
+  --ink-2: #c3c2b7;
+  --muted: #898781;
+  --grid: #2c2c2a;
+  --baseline: #3a3a38;
+  --border: rgba(255, 255, 255, 0.09);
+
+  --accent: #3987e5;
+  --accent-2: #6da7ec;
+  --accent-soft: rgba(57, 135, 229, 0.16);
+  --aqua: #199e70;
+  --red: #e66767;
+  --good-text: #0ca30c;
+  --bad-text: #e66767;
+  --good-soft: rgba(12, 163, 12, 0.14);
+  --bad-soft: rgba(230, 103, 103, 0.13);
+
+  --shadow-sm: none;
+  --shadow-md: 0 12px 32px rgba(0, 0, 0, 0.45);
+  --shadow-btn: none;
+
+  --blur-bg: rgba(26, 26, 25, 0.72);
 }
 
 /* ---------- base ---------- */
@@ -380,6 +410,54 @@ svg text { font-family: inherit; }
 
 .spacer { height: 18px; }
 
+/* ---------- filtros de lançamentos ---------- */
+.filter-row { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+
+/* ---------- metas e orçamentos ---------- */
+.goal-row { padding: 14px 0; border-bottom: 1px solid var(--grid); }
+.goal-row:last-child { border-bottom: 0; padding-bottom: 4px; }
+.goal-head {
+  display: flex; justify-content: space-between; gap: 12px;
+  font-size: 14px; margin-bottom: 8px;
+  font-variant-numeric: tabular-nums;
+}
+.meter {
+  height: 8px; border-radius: 999px;
+  background: var(--accent-soft);
+  overflow: hidden;
+}
+.meter-fill {
+  height: 100%; border-radius: 999px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  transition: width 0.4s cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+.meter-fill.ok { background: #0ca30c; }
+.meter-fill.warn { background: #fab219; }
+.meter-fill.over { background: #d03b3b; }
+.goal-foot {
+  display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 8px; font-size: 12.5px; color: var(--muted);
+}
+.goal-actions { display: inline-flex; gap: 6px; }
+
+/* ---------- mercado ---------- */
+.rate-card .value { font-variant-numeric: tabular-nums; }
+.rate-foot {
+  display: flex; justify-content: space-between; align-items: center;
+  gap: 10px; margin-top: 8px; flex-wrap: wrap;
+}
+.rate-foot .delta { margin-top: 0; }
+.spark svg { display: block; }
+
+.sim-box {
+  margin-top: 6px; padding: 16px;
+  border-radius: var(--radius-sm);
+  background: var(--accent-soft);
+}
+.sim-total { font-size: 30px; font-weight: 700; letter-spacing: -0.02em; color: var(--accent); }
+.sim-detail { font-size: 13px; color: var(--ink-2); margin-top: 6px; line-height: 1.55; }
+
 /* ============================================================
    CELULAR — menu vira barra inferior, tabelas viram cartões
    ============================================================ */
@@ -408,12 +486,14 @@ svg text { font-family: inherit; }
     flex: 1;
     flex-direction: column;
     align-items: center;
-    gap: 3px;
-    padding: 6px 2px;
-    font-size: 10.5px;
+    gap: 2px;
+    padding: 6px 1px;
+    font-size: 9.5px;
     font-weight: 600;
+    min-width: 0;
   }
-  .nav-item svg { width: 22px; height: 22px; flex: 0 0 22px; }
+  .nav-item svg { width: 21px; height: 21px; flex: 0 0 21px; }
+  .nav-item .side-label { overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
   .nav-item.active { background: none; color: var(--accent); }
   .nav-item:hover { background: none; }
   .side-label { opacity: 1 !important; pointer-events: auto; }

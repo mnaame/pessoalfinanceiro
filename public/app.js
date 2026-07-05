@@ -1,6 +1,12 @@
 /* Meu Financeiro — lógica do painel */
 'use strict';
 
+// aplica o tema salvo o quanto antes para não piscar
+{
+  const t = localStorage.getItem('theme');
+  if (t && t !== 'auto') document.documentElement.dataset.theme = t;
+}
+
 const $ = (s) => document.querySelector(s);
 const money = Charts.money;
 const monthLabel = Charts.monthLabel;
@@ -157,11 +163,20 @@ function projectionSentence(p) {
 }
 
 /* ---------- lançamentos ---------- */
-async function loadTransactions() {
-  const rows = await api(`/api/transactions?month=${state.month}`);
+let txCache = [];
+let txEditingId = null;
+
+function renderTransactions() {
+  const q = $('#tx-search').value.trim().toLowerCase();
+  const type = $('#tx-filter-type').value;
+  const rows = txCache.filter((t) =>
+    (!type || t.type === type) &&
+    (!q || t.description.toLowerCase().includes(q) || t.category.toLowerCase().includes(q)));
   const box = $('#tx-list');
   if (!rows.length) {
-    box.innerHTML = `<p class="empty">Nenhum lançamento em ${fullMonthName(state.month)}. Adicione o primeiro acima.</p>`;
+    box.innerHTML = txCache.length
+      ? '<p class="empty">Nada encontrado com esse filtro.</p>'
+      : `<p class="empty">Nenhum lançamento em ${fullMonthName(state.month)}. Adicione o primeiro acima.</p>`;
     return;
   }
   box.innerHTML = `<table class="cards">
@@ -172,7 +187,10 @@ async function loadTransactions() {
         <td data-label="Descrição">${esc(t.description)}${t.recurring ? ' <span class="badge">fixo</span>' : ''}</td>
         <td data-label="Categoria">${esc(t.category)}</td>
         <td class="num ${t.type === 'receita' ? 'amount-pos' : 'amount-neg'}" data-label="Valor">${t.type === 'receita' ? '+' : '−'} ${money(t.amount_cents)}</td>
-        <td class="num actions"><button class="btn ghost small" data-del-tx="${t.id}">Excluir</button></td>
+        <td class="num actions">
+          <button class="btn ghost small" data-edit-tx="${t.id}">Editar</button>
+          <button class="btn danger-ghost small" data-del-tx="${t.id}">Excluir</button>
+        </td>
       </tr>`).join('')}
     </tbody></table>`;
   box.querySelectorAll('[data-del-tx]').forEach((b) => {
@@ -182,27 +200,67 @@ async function loadTransactions() {
       loadTransactions();
     };
   });
+  box.querySelectorAll('[data-edit-tx]').forEach((b) => {
+    b.onclick = () => startTxEdit(Number(b.dataset.editTx));
+  });
 }
+
+async function loadTransactions() {
+  txCache = await api(`/api/transactions?month=${state.month}`);
+  renderTransactions();
+}
+
+$('#tx-search').addEventListener('input', renderTransactions);
+$('#tx-filter-type').addEventListener('change', renderTransactions);
+
+function startTxEdit(id) {
+  const t = txCache.find((x) => x.id === id);
+  if (!t) return;
+  const f = $('#form-tx');
+  txEditingId = id;
+  f.type.value = t.type;
+  f.description.value = t.description;
+  f.category.value = t.category;
+  f.amount.value = (t.amount_cents / 100).toFixed(2).replace('.', ',');
+  f.date.value = t.date;
+  f.recurring.checked = !!t.recurring;
+  $('#tx-submit').textContent = 'Salvar alterações';
+  $('#tx-cancel').hidden = false;
+  f.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  f.description.focus();
+}
+
+function endTxEdit() {
+  const f = $('#form-tx');
+  txEditingId = null;
+  f.reset();
+  f.date.value = defaultDate();
+  $('#tx-submit').textContent = 'Adicionar';
+  $('#tx-cancel').hidden = true;
+}
+
+$('#tx-cancel').addEventListener('click', endTxEdit);
 
 $('#form-tx').addEventListener('submit', async (e) => {
   e.preventDefault();
   const f = e.target;
   const cents = parseMoney(f.amount.value);
   if (!cents) { alert('Informe um valor válido, ex.: 1.250,00'); return; }
-  await api('/api/transactions', {
-    method: 'POST',
-    body: JSON.stringify({
-      type: f.type.value,
-      description: f.description.value,
-      category: f.category.value || 'Outros',
-      amount_cents: cents,
-      date: f.date.value,
-      recurring: f.recurring.checked,
-    }),
-  });
-  f.reset();
-  f.date.value = defaultDate();
+  const payload = {
+    type: f.type.value,
+    description: f.description.value,
+    category: f.category.value || 'Outros',
+    amount_cents: cents,
+    date: f.date.value,
+    recurring: f.recurring.checked,
+  };
+  if (txEditingId) {
+    await api(`/api/transactions/${txEditingId}`, { method: 'PUT', body: JSON.stringify(payload) });
+  } else {
+    await api('/api/transactions', { method: 'POST', body: JSON.stringify(payload) });
+  }
   state.month = f.date.value.slice(0, 7);
+  endTxEdit();
   syncMonthPickers();
   loadTransactions();
 });
@@ -334,6 +392,270 @@ $('#form-debt').addEventListener('submit', async (e) => {
   loadDebts();
 });
 
+/* ---------- planos: metas + orçamentos ---------- */
+async function loadPlanning() {
+  const [goals, budgets, proj] = await Promise.all([
+    api('/api/goals'), api('/api/budgets'), api('/api/projection'),
+  ]);
+
+  // sobra média dos próximos 3 meses projetados (para estimar quando a meta chega)
+  const next3 = proj.months.slice(0, 3);
+  const avgLeftover = next3.length
+    ? Math.max(0, Math.round(next3.reduce((s, m) => s + m.leftover, 0) / next3.length)) : 0;
+
+  const gbox = $('#goal-list');
+  if (!goals.length) {
+    gbox.innerHTML = '<p class="empty">Nenhuma meta ainda. Que tal começar por uma reserva de emergência?</p>';
+  } else {
+    gbox.innerHTML = goals.map((g) => {
+      const pct = Math.min(100, Math.round(g.saved_cents / g.target_cents * 100));
+      const done = g.saved_cents >= g.target_cents;
+      const missing = g.target_cents - g.saved_cents;
+      let eta = '';
+      if (!done && avgLeftover > 0) {
+        const monthsNeeded = Math.ceil(missing / avgLeftover);
+        const d = new Date(); d.setMonth(d.getMonth() + monthsNeeded);
+        eta = `guardando sua sobra (~${money(avgLeftover)}/mês), você chega lá em ~${monthsNeeded} ${monthsNeeded === 1 ? 'mês' : 'meses'} (${d.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })})`;
+      } else if (!done) {
+        eta = 'sua sobra projetada está zerada — reveja despesas para alimentar a meta';
+      }
+      return `<div class="goal-row">
+        <div class="goal-head">
+          <strong>${esc(g.name)}</strong>
+          <span>${money(g.saved_cents)} <span style="color:var(--muted)">de ${money(g.target_cents)}</span></span>
+        </div>
+        <div class="meter"><div class="meter-fill ${done ? 'ok' : ''}" style="width:${pct}%"></div></div>
+        <div class="goal-foot">
+          <span>${done ? '🎉 Meta atingida!' : `${pct}% · ${eta}`}${g.target_date ? ` · prazo: ${fmtDate(g.target_date)}` : ''}</span>
+          <span class="goal-actions">
+            ${done ? '' : `<button class="btn small" data-goal-add="${g.id}">+ Guardar</button>`}
+            ${g.saved_cents > 0 ? `<button class="btn ghost small" data-goal-sub="${g.id}" title="Corrigir valor guardado">−</button>` : ''}
+            <button class="btn danger-ghost small" data-goal-del="${g.id}">Excluir</button>
+          </span>
+        </div>
+      </div>`;
+    }).join('');
+
+    gbox.querySelectorAll('[data-goal-add]').forEach((b) => {
+      b.onclick = async () => {
+        const v = prompt('Quanto você guardou para esta meta? (R$)');
+        if (v === null) return;
+        const cents = parseMoney(v);
+        if (!cents) { alert('Valor inválido.'); return; }
+        await api(`/api/goals/${b.dataset.goalAdd}/add`, { method: 'POST', body: JSON.stringify({ amount_cents: cents }) });
+        loadPlanning();
+      };
+    });
+    gbox.querySelectorAll('[data-goal-sub]').forEach((b) => {
+      b.onclick = async () => {
+        const v = prompt('Quanto retirar do valor guardado? (R$)');
+        if (v === null) return;
+        const cents = parseMoney(v);
+        if (!cents) { alert('Valor inválido.'); return; }
+        await api(`/api/goals/${b.dataset.goalSub}/add`, { method: 'POST', body: JSON.stringify({ amount_cents: -cents }) });
+        loadPlanning();
+      };
+    });
+    gbox.querySelectorAll('[data-goal-del]').forEach((b) => {
+      b.onclick = async () => {
+        if (!confirm('Excluir esta meta?')) return;
+        await api(`/api/goals/${b.dataset.goalDel}`, { method: 'DELETE' });
+        loadPlanning();
+      };
+    });
+  }
+
+  const bbox = $('#budget-list');
+  if (!budgets.items.length) {
+    bbox.innerHTML = '<p class="empty">Nenhum limite definido. Comece pela categoria em que você mais gasta.</p>';
+  } else {
+    bbox.innerHTML = budgets.items.map((b) => {
+      const pct = Math.round(b.spent_cents / b.limit_cents * 100);
+      const level = pct > 100 ? 'over' : pct >= 75 ? 'warn' : '';
+      const label = pct > 100
+        ? `🚨 estourou em ${money(b.spent_cents - b.limit_cents)}`
+        : pct >= 75 ? `⚠️ atenção: ${pct}% usado` : `${pct}% usado`;
+      return `<div class="goal-row">
+        <div class="goal-head">
+          <strong>${esc(b.category)}</strong>
+          <span>${money(b.spent_cents)} <span style="color:var(--muted)">de ${money(b.limit_cents)}</span></span>
+        </div>
+        <div class="meter"><div class="meter-fill ${level}" style="width:${Math.min(100, pct)}%"></div></div>
+        <div class="goal-foot">
+          <span>${label} em ${fullMonthName(budgets.month)}</span>
+          <button class="btn danger-ghost small" data-budget-del="${b.id}">Remover</button>
+        </div>
+      </div>`;
+    }).join('');
+    bbox.querySelectorAll('[data-budget-del]').forEach((btn) => {
+      btn.onclick = async () => {
+        await api(`/api/budgets/${btn.dataset.budgetDel}`, { method: 'DELETE' });
+        loadPlanning();
+      };
+    });
+  }
+}
+
+$('#form-goal').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const f = e.target;
+  const cents = parseMoney(f.target.value);
+  if (!cents) { alert('Informe o valor alvo, ex.: 5.000,00'); return; }
+  await api('/api/goals', {
+    method: 'POST',
+    body: JSON.stringify({ name: f.name.value, target_cents: cents, target_date: f.target_date.value || null }),
+  });
+  f.reset();
+  loadPlanning();
+});
+
+$('#form-budget').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const f = e.target;
+  const cents = parseMoney(f.limit.value);
+  if (!cents) { alert('Informe o limite mensal, ex.: 300,00'); return; }
+  await api('/api/budgets', {
+    method: 'POST',
+    body: JSON.stringify({ category: f.category.value, limit_cents: cents }),
+  });
+  f.reset();
+  loadPlanning();
+});
+
+/* ---------- mercado ---------- */
+const fmtNum = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+async function loadMarket() {
+  const errBox = $('#market-error');
+  errBox.innerHTML = '';
+  let mkt;
+  try {
+    mkt = await api('/api/market');
+  } catch (err) {
+    errBox.innerHTML = '<div class="card" style="margin-bottom:16px;color:var(--bad-text)">⚠️ Não foi possível carregar as cotações agora. Verifique a internet do servidor e tente de novo.</div>';
+    return;
+  }
+  if (!mkt.rates.length && !mkt.indicators.length) {
+    errBox.innerHTML = '<div class="card" style="margin-bottom:16px;color:var(--bad-text)">⚠️ As fontes de cotação não responderam. Tente novamente em alguns minutos.</div>';
+    return;
+  }
+  $('#market-updated').textContent = 'atualizado ' + new Date(mkt.fetched_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) + (mkt.fake ? ' (demonstração)' : '');
+
+  const ratesBox = $('#market-rates');
+  ratesBox.innerHTML = mkt.rates.map((r) => `
+    <div class="card tile rate-card">
+      <div class="label">${esc(r.name)} (${r.code})</div>
+      <div class="value">${money(Math.round(r.bid * 100))}</div>
+      <div class="rate-foot">
+        <span class="delta ${r.pct_change > 0 ? 'up' : r.pct_change < 0 ? 'down' : 'flat'}">${r.pct_change > 0 ? '▲' : r.pct_change < 0 ? '▼' : '='} ${fmtNum.format(Math.abs(r.pct_change))}% hoje</span>
+        <span class="spark" data-spark="${r.code}"></span>
+      </div>
+    </div>`).join('');
+  const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
+  for (const r of mkt.rates) {
+    const holder = ratesBox.querySelector(`[data-spark="${r.code}"]`);
+    if (holder && r.history.length > 1) Charts.sparkline(holder, r.history, accent);
+  }
+
+  $('#market-indicators').innerHTML = mkt.indicators.map((i) => `
+    <div class="card tile">
+      <div class="label">${esc(i.label)}</div>
+      <div class="value">${fmtNum.format(i.value)}%</div>
+      <div class="hint">${i.key === 'ipca12' ? 'inflação acumulada em 12 meses' : 'ao ano'}</div>
+    </div>`).join('');
+
+  // conversor
+  const sel = $('#conv-currency');
+  sel.innerHTML = mkt.rates.map((r) => `<option value="${r.bid}" data-code="${r.code}">${esc(r.name)}</option>`).join('');
+  const note = () => {
+    const opt = sel.selectedOptions[0];
+    $('#conv-note').textContent = `1 ${opt.dataset.code} = ${money(Math.round(Number(sel.value) * 100))}`;
+  };
+  const toBrl = () => {
+    const v = parseMoney($('#conv-foreign').value);
+    $('#conv-brl').value = v ? fmtNum.format((v / 100) * Number(sel.value)) : '';
+  };
+  const toForeign = () => {
+    const v = parseMoney($('#conv-brl').value);
+    $('#conv-foreign').value = v ? fmtNum.format((v / 100) / Number(sel.value)) : '';
+  };
+  $('#conv-foreign').oninput = toBrl;
+  $('#conv-brl').oninput = toForeign;
+  sel.onchange = () => { note(); toBrl(); };
+  note();
+
+  // simulador: pré-preenche com a sobra projetada e o CDI
+  const cdi = mkt.indicators.find((i) => i.key === 'cdi');
+  if (cdi && !$('#sim-rate').value) $('#sim-rate').value = fmtNum.format(cdi.value);
+  if (!$('#sim-monthly').value) {
+    try {
+      const proj = await api('/api/projection');
+      const leftover = proj.months[0]?.leftover ?? 0;
+      if (leftover > 0) $('#sim-monthly').value = fmtNum.format(leftover / 100);
+    } catch { /* opcional */ }
+  }
+  runSimulator();
+}
+
+function runSimulator() {
+  const monthly = parseMoney($('#sim-monthly').value);
+  const rate = Number(String($('#sim-rate').value).replace(',', '.'));
+  const years = Number($('#sim-years').value);
+  const out = $('#sim-result');
+  if (!monthly || !Number.isFinite(rate) || rate <= 0) { out.innerHTML = ''; return; }
+  const i = Math.pow(1 + rate / 100, 1 / 12) - 1;
+  const n = years * 12;
+  const fv = Math.round(monthly * ((Math.pow(1 + i, n) - 1) / i));
+  const invested = monthly * n;
+  out.innerHTML = `
+    <div class="sim-box">
+      <div class="sim-total">${money(fv)}</div>
+      <div class="sim-detail">investindo ${money(monthly)}/mês por ${years} ano(s) a ${fmtNum.format(rate)}% a.a.<br>
+      Você aporta <strong>${money(invested)}</strong> e os juros somam <strong class="amount-pos">${money(fv - invested)}</strong>.</div>
+    </div>`;
+}
+['sim-monthly', 'sim-rate', 'sim-years'].forEach((id) => {
+  document.getElementById(id).addEventListener('input', runSimulator);
+});
+
+/* ---------- backup / restauração ---------- */
+$('#btn-restore').addEventListener('click', () => $('#restore-file').click());
+$('#restore-file').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  e.target.value = '';
+  if (!file) return;
+  if (!confirm('Restaurar substitui TODOS os seus dados atuais pelos do arquivo. Continuar?')) return;
+  try {
+    const text = await file.text();
+    await api('/api/restore', { method: 'POST', body: text });
+    alert('Backup restaurado com sucesso! ✔');
+    refresh();
+  } catch (err) {
+    alert('Não foi possível restaurar: ' + err.message);
+  }
+});
+
+/* ---------- tema claro/escuro/automático ---------- */
+const THEMES = ['auto', 'light', 'dark'];
+const THEME_LABEL = { auto: 'Tema: auto', light: 'Tema: claro', dark: 'Tema: escuro' };
+
+function applyTheme(theme) {
+  if (theme === 'auto') delete document.documentElement.dataset.theme;
+  else document.documentElement.dataset.theme = theme;
+  document.querySelectorAll('.js-theme-label').forEach((el) => { el.textContent = THEME_LABEL[theme]; });
+}
+
+let currentTheme = localStorage.getItem('theme') || 'auto';
+applyTheme(currentTheme);
+document.querySelectorAll('.js-theme').forEach((b) => {
+  b.addEventListener('click', () => {
+    currentTheme = THEMES[(THEMES.indexOf(currentTheme) + 1) % THEMES.length];
+    localStorage.setItem('theme', currentTheme);
+    applyTheme(currentTheme);
+    refresh(); // re-renderiza os gráficos com as cores do novo tema
+  });
+});
+
 /* ---------- projeção ---------- */
 async function loadProjection() {
   const p = await api('/api/projection');
@@ -373,6 +695,8 @@ function refresh(view = activeView()) {
   if (view === 'transactions') loadTransactions().catch(showError);
   if (view === 'installments') loadInstallments().catch(showError);
   if (view === 'debts') loadDebts().catch(showError);
+  if (view === 'planning') loadPlanning().catch(showError);
+  if (view === 'market') loadMarket().catch(showError);
   if (view === 'projection') loadProjection().catch(showError);
 }
 
@@ -401,6 +725,10 @@ document.querySelectorAll('.js-logout').forEach((b) => {
 });
 
 /* ---------- inicialização ---------- */
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(() => {});
+}
+
 (async function init() {
   try {
     const me = await api('/api/me');

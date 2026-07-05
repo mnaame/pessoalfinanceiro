@@ -22,6 +22,17 @@ você vai estar melhor financeiramente**.
 - **Exportar para Excel/CSV** — lançamentos, parcelas e dívidas, no formato brasileiro
   (`;` e vírgula decimal), abre direto no Excel.
 - **Gráficos** — receitas × despesas dos últimos 6 meses e despesas por categoria, com modo escuro automático.
+- **Mercado financeiro** — dólar, euro e bitcoin ao vivo com tendência de 30 dias (AwesomeAPI),
+  Selic/CDI/IPCA (Banco Central), conversor de moedas e simulador "sua sobra rendendo".
+  Sem internet no servidor? Rode com `MARKET_FAKE=1` para dados de demonstração.
+- **Metas de economia** — objetivo, valor guardado, barra de progresso e estimativa de
+  quando você chega lá com a sua sobra projetada.
+- **Orçamento por categoria** — limite mensal com barra que avisa aos 75% e ao estourar.
+- **Lançamentos fixos automáticos** — o que é marcado como "fixo" entra sozinho no mês novo.
+- **Editar, buscar e filtrar lançamentos**, além de **backup/restauração em 1 clique** (JSON).
+- **Aplicativo instalável (PWA)** — ícone na tela do celular, abre em tela cheia e
+  permite consulta offline dos últimos dados vistos.
+- **Tema claro/escuro/automático** com alternador manual.
 
 ## Como rodar
 

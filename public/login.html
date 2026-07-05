@@ -7,6 +7,9 @@
   <meta name="theme-color" content="#fcfcfb" media="(prefers-color-scheme: light)">
   <title>Entrar — Meu Financeiro</title>
   <link rel="stylesheet" href="/styles.css">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" href="/icons/icon-192.png">
 </head>
 <body>
   <div class="auth-page">
@@ -56,6 +59,10 @@
 
   <script>
     const $ = (s) => document.querySelector(s);
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+    // tema escolhido manualmente também vale na tela de login
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme && savedTheme !== 'auto') document.documentElement.dataset.theme = savedTheme;
 
     $('#show-register').onclick = () => { $('#panel-login').hidden = true; $('#panel-register').hidden = false; };
     $('#show-login').onclick = () => { $('#panel-register').hidden = true; $('#panel-login').hidden = false; };

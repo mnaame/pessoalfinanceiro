@@ -7,6 +7,9 @@
   <meta name="theme-color" content="#fcfcfb" media="(prefers-color-scheme: light)">
   <title>Meu Financeiro</title>
   <link rel="stylesheet" href="/styles.css">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" href="/icons/icon-192.png">
 </head>
 <body>
   <aside class="sidebar" id="sidebar">
@@ -16,9 +19,9 @@
     </div>
 
     <nav class="side-nav">
-      <button class="nav-item active" data-view="overview" title="Visão geral">
+      <button class="nav-item active" data-view="overview" title="Início">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
-        <span class="side-label">Visão geral</span>
+        <span class="side-label">Início</span>
       </button>
       <button class="nav-item" data-view="transactions" title="Lançamentos">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v13"/><path d="m4 14 3 3 3-3"/><path d="M17 20V7"/><path d="m14 10 3-3 3 3"/></svg>
@@ -32,6 +35,14 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
         <span class="side-label">Dívidas</span>
       </button>
+      <button class="nav-item" data-view="planning" title="Metas e orçamentos">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+        <span class="side-label">Planos</span>
+      </button>
+      <button class="nav-item" data-view="market" title="Mercado financeiro">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        <span class="side-label">Mercado</span>
+      </button>
       <button class="nav-item" data-view="projection" title="Projeção">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 17 6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg>
         <span class="side-label">Projeção</span>
@@ -39,6 +50,10 @@
     </nav>
 
     <div class="side-bottom">
+      <button class="nav-item js-theme" title="Alternar tema">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18z" fill="currentColor" stroke="none"/></svg>
+        <span class="side-label js-theme-label">Tema: auto</span>
+      </button>
       <button class="nav-item js-logout" id="btn-logout" title="Sair">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></svg>
         <span class="side-label">Sair</span>
@@ -62,6 +77,9 @@
     <section class="view active" id="view-overview">
       <div class="toolbar">
         <h2>Resumo do mês</h2>
+        <a class="btn ghost small" href="/api/backup" download title="Baixar todos os seus dados">⬇ Backup</a>
+        <button class="btn ghost small" id="btn-restore" title="Restaurar de um arquivo de backup">⬆ Restaurar</button>
+        <input type="file" id="restore-file" accept="application/json" hidden>
         <input type="month" id="month-picker">
       </div>
 
@@ -159,7 +177,8 @@
           </div>
           <div class="form-row" style="align-items:center">
             <label class="check"><input type="checkbox" name="recurring"> Repete todo mês (fixo)</label>
-            <button class="btn" type="submit">Adicionar</button>
+            <button class="btn" type="submit" id="tx-submit">Adicionar</button>
+            <button class="btn ghost" type="button" id="tx-cancel" hidden>Cancelar edição</button>
           </div>
         </form>
         <datalist id="categories">
@@ -170,7 +189,111 @@
       </div>
 
       <div class="card">
+        <div class="filter-row">
+          <input type="search" id="tx-search" placeholder="🔍 Buscar por descrição ou categoria…" style="flex:2;min-width:180px">
+          <select id="tx-filter-type">
+            <option value="">Todos os tipos</option>
+            <option value="receita">Só receitas</option>
+            <option value="despesa">Só despesas</option>
+          </select>
+        </div>
         <div class="table-wrap" id="tx-list"></div>
+      </div>
+    </section>
+
+    <!-- ===== PLANOS (metas + orçamentos) ===== -->
+    <section class="view" id="view-planning">
+      <div class="toolbar"><h2>Metas e orçamentos</h2></div>
+
+      <div class="card" style="margin-bottom:16px">
+        <h3 style="margin:0 0 4px;font-size:15px">🎯 Metas de economia</h3>
+        <p class="sub" style="margin:0 0 14px;font-size:13px;color:var(--muted)">Defina um objetivo e acompanhe quanto já guardou — o site estima quando você chega lá com sua sobra atual.</p>
+        <form id="form-goal">
+          <div class="form-row">
+            <label class="field" style="flex:2">Objetivo
+              <input name="name" required maxlength="80" placeholder="Ex.: Reserva de emergência, Viagem…">
+            </label>
+            <label class="field">Valor alvo (R$)
+              <input name="target" required inputmode="decimal" placeholder="ex.: 5.000,00">
+            </label>
+            <label class="field">Prazo (opcional)
+              <input name="target_date" type="date">
+            </label>
+            <button class="btn" type="submit" style="align-self:flex-end">Criar meta</button>
+          </div>
+        </form>
+        <div id="goal-list"></div>
+      </div>
+
+      <div class="card">
+        <h3 style="margin:0 0 4px;font-size:15px">📊 Orçamento por categoria</h3>
+        <p class="sub" style="margin:0 0 14px;font-size:13px;color:var(--muted)">Limite mensal de gastos por categoria — a barra avisa quando você está chegando perto.</p>
+        <form id="form-budget">
+          <div class="form-row">
+            <label class="field" style="flex:2">Categoria
+              <input name="category" list="categories" required maxlength="40" placeholder="Ex.: Lazer">
+            </label>
+            <label class="field">Limite mensal (R$)
+              <input name="limit" required inputmode="decimal" placeholder="ex.: 300,00">
+            </label>
+            <button class="btn" type="submit" style="align-self:flex-end">Definir limite</button>
+          </div>
+        </form>
+        <div id="budget-list"></div>
+      </div>
+    </section>
+
+    <!-- ===== MERCADO ===== -->
+    <section class="view" id="view-market">
+      <div class="toolbar">
+        <h2>Mercado financeiro</h2>
+        <span style="font-size:12px;color:var(--muted)" id="market-updated"></span>
+      </div>
+
+      <div id="market-error"></div>
+      <div class="grid-tiles" id="market-rates"></div>
+      <div class="grid-tiles" id="market-indicators"></div>
+
+      <div class="grid-2">
+        <div class="card">
+          <h3 style="margin:0 0 4px;font-size:15px">💱 Conversor de moedas</h3>
+          <p class="sub" style="margin:0 0 14px;font-size:13px;color:var(--muted)">Usando a cotação de agora</p>
+          <div class="form-row" style="align-items:flex-end">
+            <label class="field">Moeda
+              <select id="conv-currency"></select>
+            </label>
+            <label class="field">Moeda estrangeira
+              <input id="conv-foreign" inputmode="decimal" placeholder="1,00">
+            </label>
+            <label class="field">Em reais (R$)
+              <input id="conv-brl" inputmode="decimal" placeholder="0,00">
+            </label>
+          </div>
+          <p style="margin:0;font-size:13px;color:var(--muted)" id="conv-note"></p>
+        </div>
+
+        <div class="card">
+          <h3 style="margin:0 0 4px;font-size:15px">🌱 Sua sobra rendendo</h3>
+          <p class="sub" style="margin:0 0 14px;font-size:13px;color:var(--muted)">Simule investir todo mês a uma taxa anual (pré-preenchida com o CDI)</p>
+          <div class="form-row" style="align-items:flex-end">
+            <label class="field">Aporte mensal (R$)
+              <input id="sim-monthly" inputmode="decimal" placeholder="0,00">
+            </label>
+            <label class="field">Taxa anual (%)
+              <input id="sim-rate" inputmode="decimal" placeholder="10,5">
+            </label>
+            <label class="field">Prazo
+              <select id="sim-years">
+                <option value="1">1 ano</option>
+                <option value="2" selected>2 anos</option>
+                <option value="3">3 anos</option>
+                <option value="5">5 anos</option>
+                <option value="10">10 anos</option>
+              </select>
+            </label>
+          </div>
+          <div id="sim-result"></div>
+        </div>
       </div>
     </section>
 
