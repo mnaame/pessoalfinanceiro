@@ -26,6 +26,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2.5"/><path d="M2 10h20"/><path d="M6 15h4"/></svg>
         <span class="side-label">Parcelas</span>
       </button>
+      <button class="nav-item" data-view="debts" title="Dívidas">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span class="side-label">Dívidas</span>
+      </button>
       <button class="nav-item" data-view="projection" title="Projeção">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 17 6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg>
         <span class="side-label">Projeção</span>
@@ -98,6 +102,19 @@
 
       <div class="spacer"></div>
 
+      <div class="card chart-card">
+        <h3>Evolução do saldo acumulado</h3>
+        <p class="sub">Receitas − despesas − parcelas, mês a mês, desde o início dos registros</p>
+        <div id="chart-wealth"></div>
+      </div>
+
+      <div class="spacer"></div>
+
+      <div class="card highlight" id="overview-debts" hidden>
+        <h3>🤝 Dívidas em aberto</h3>
+        <p id="overview-debts-text"></p>
+      </div>
+
       <div class="card">
         <h3 style="margin:0 0 10px;font-size:15px">Parcelas com vencimento neste mês</h3>
         <div class="table-wrap" id="due-list"></div>
@@ -108,6 +125,7 @@
     <section class="view" id="view-transactions">
       <div class="toolbar">
         <h2>Lançamentos</h2>
+        <a class="btn ghost small" href="/api/export/lancamentos.csv" download>⬇ Exportar CSV</a>
         <input type="month" id="tx-month-picker">
       </div>
 
@@ -152,7 +170,10 @@
 
     <!-- ===== PARCELAS ===== -->
     <section class="view" id="view-installments">
-      <div class="toolbar"><h2>Compras parceladas e financiamentos</h2></div>
+      <div class="toolbar">
+        <h2>Compras parceladas e financiamentos</h2>
+        <a class="btn ghost small" href="/api/export/parcelas.csv" download>⬇ Exportar CSV</a>
+      </div>
 
       <div class="card" style="margin-bottom:16px">
         <form id="form-inst">
@@ -184,6 +205,57 @@
 
       <div class="card">
         <div class="table-wrap" id="inst-list"></div>
+      </div>
+    </section>
+
+    <!-- ===== DÍVIDAS ===== -->
+    <section class="view" id="view-debts">
+      <div class="toolbar">
+        <h2>Dívidas com pessoas</h2>
+        <a class="btn ghost small" href="/api/export/dividas.csv" download>⬇ Exportar CSV</a>
+      </div>
+
+      <div class="grid-tiles">
+        <div class="card tile">
+          <div class="label">Tenho a receber</div>
+          <div class="value pos" id="debt-receivable">—</div>
+          <div class="hint">dinheiro que me devem</div>
+        </div>
+        <div class="card tile">
+          <div class="label">Tenho a pagar</div>
+          <div class="value neg" id="debt-payable">—</div>
+          <div class="hint">dinheiro que eu devo</div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:16px">
+        <form id="form-debt">
+          <div class="form-row">
+            <label class="field">Tipo
+              <select name="direction">
+                <option value="a_receber">Me devem</option>
+                <option value="a_pagar">Eu devo</option>
+              </select>
+            </label>
+            <label class="field">Pessoa
+              <input name="person" required maxlength="60" placeholder="Ex.: João, Maria…">
+            </label>
+            <label class="field" style="flex:2">Motivo (opcional)
+              <input name="description" maxlength="120" placeholder="Ex.: Emprestei para o conserto do carro">
+            </label>
+            <label class="field">Valor (R$)
+              <input name="amount" required inputmode="decimal" placeholder="ex.: 200,00">
+            </label>
+            <label class="field">Data combinada (opcional)
+              <input name="due_date" type="date">
+            </label>
+            <button class="btn" type="submit" style="align-self:flex-end">Adicionar</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="card">
+        <div class="table-wrap" id="debt-list"></div>
       </div>
     </section>
 

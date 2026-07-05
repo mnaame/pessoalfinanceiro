@@ -16,6 +16,11 @@ você vai estar melhor financeiramente**.
 - **Projeção financeira** — com a média dos seus últimos 3 meses e o cronograma das parcelas,
   o site mostra **o mês em que sua última parcela é quitada** e o primeiro mês com sobra positiva,
   com gráfico mês a mês.
+- **Dívidas com pessoas** — anote quem te deve e a quem você deve (pessoa, motivo, valor,
+  data combinada), marque como quitada e veja os totais a receber/pagar.
+- **Evolução do saldo** — gráfico do saldo acumulado mês a mês desde o início dos registros.
+- **Exportar para Excel/CSV** — lançamentos, parcelas e dívidas, no formato brasileiro
+  (`;` e vírgula decimal), abre direto no Excel.
 - **Gráficos** — receitas × despesas dos últimos 6 meses e despesas por categoria, com modo escuro automático.
 
 ## Como rodar

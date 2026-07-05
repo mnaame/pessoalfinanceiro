@@ -101,6 +101,23 @@ async function loadOverview() {
       </tbody></table>`;
   }
 
+  // gráfico de evolução do saldo
+  const w = await api('/api/wealth');
+  Charts.wealthChart($('#chart-wealth'), w.months);
+
+  // dívidas em aberto (só aparece se houver alguma)
+  const d = await api('/api/debts');
+  const debtCard = $('#overview-debts');
+  if (d.total_receivable > 0 || d.total_payable > 0) {
+    debtCard.hidden = false;
+    const parts = [];
+    if (d.total_receivable > 0) parts.push(`tem <strong>${money(d.total_receivable)}</strong> a receber`);
+    if (d.total_payable > 0) parts.push(`deve <strong>${money(d.total_payable)}</strong> a outras pessoas`);
+    $('#overview-debts-text').innerHTML = `Você ${parts.join(' e ')}. Veja os detalhes na aba Dívidas.`;
+  } else {
+    debtCard.hidden = true;
+  }
+
   // resumo da projeção na visão geral
   const p = await api('/api/projection');
   $('#overview-projection-text').innerHTML = projectionSentence(p);
@@ -243,6 +260,65 @@ $('#form-inst').addEventListener('submit', async (e) => {
   loadInstallments();
 });
 
+/* ---------- dívidas ---------- */
+async function loadDebts() {
+  const d = await api('/api/debts');
+  $('#debt-receivable').textContent = money(d.total_receivable);
+  $('#debt-payable').textContent = money(d.total_payable);
+
+  const box = $('#debt-list');
+  if (!d.items.length) {
+    box.innerHTML = '<p class="empty">Nenhuma dívida anotada. Registre acima quem te deve ou a quem você deve.</p>';
+    return;
+  }
+  box.innerHTML = `<table>
+    <thead><tr><th>Tipo</th><th>Pessoa</th><th>Motivo</th><th class="num">Valor</th><th>Combinado para</th><th>Situação</th><th></th></tr></thead>
+    <tbody>${d.items.map((i) => `
+      <tr style="${i.paid ? 'opacity:.55' : ''}">
+        <td><span class="badge">${i.direction === 'a_receber' ? '↙ me devem' : '↗ eu devo'}</span></td>
+        <td>${esc(i.person)}</td>
+        <td>${esc(i.description) || '—'}</td>
+        <td class="num ${i.direction === 'a_receber' ? 'amount-pos' : 'amount-neg'}">${money(i.amount_cents)}</td>
+        <td>${i.due_date ? fmtDate(i.due_date) : '—'}</td>
+        <td>${i.paid ? '<span class="amount-pos">Quitada ✓</span>' : 'Em aberto'}</td>
+        <td class="num" style="white-space:nowrap">
+          <button class="btn ${i.paid ? 'ghost' : ''} small" data-toggle-debt="${i.id}">${i.paid ? 'Reabrir' : 'Marcar quitada'}</button>
+          <button class="btn danger-ghost small" data-del-debt="${i.id}">Excluir</button>
+        </td>
+      </tr>`).join('')}
+    </tbody></table>`;
+
+  box.querySelectorAll('[data-toggle-debt]').forEach((b) => {
+    b.onclick = async () => { await api(`/api/debts/${b.dataset.toggleDebt}/toggle`, { method: 'POST' }); loadDebts(); };
+  });
+  box.querySelectorAll('[data-del-debt]').forEach((b) => {
+    b.onclick = async () => {
+      if (!confirm('Excluir esta dívida?')) return;
+      await api(`/api/debts/${b.dataset.delDebt}`, { method: 'DELETE' });
+      loadDebts();
+    };
+  });
+}
+
+$('#form-debt').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const f = e.target;
+  const cents = parseMoney(f.amount.value);
+  if (!cents) { alert('Informe um valor válido, ex.: 200,00'); return; }
+  await api('/api/debts', {
+    method: 'POST',
+    body: JSON.stringify({
+      direction: f.direction.value,
+      person: f.person.value,
+      description: f.description.value,
+      amount_cents: cents,
+      due_date: f.due_date.value || null,
+    }),
+  });
+  f.reset();
+  loadDebts();
+});
+
 /* ---------- projeção ---------- */
 async function loadProjection() {
   const p = await api('/api/projection');
@@ -281,6 +357,7 @@ function refresh(view = activeView()) {
   if (view === 'overview') loadOverview().catch(showError);
   if (view === 'transactions') loadTransactions().catch(showError);
   if (view === 'installments') loadInstallments().catch(showError);
+  if (view === 'debts') loadDebts().catch(showError);
   if (view === 'projection') loadProjection().catch(showError);
 }
 

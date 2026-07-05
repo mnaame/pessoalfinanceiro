@@ -182,20 +182,22 @@ label.field { display: flex; flex-direction: column; gap: 4px; font-size: 13px; 
 .form-row .field { flex: 1; min-width: 140px; }
 .check { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--ink-2); }
 
-button.btn {
+.btn {
   appearance: none; border: 0; cursor: pointer;
-  font: inherit; font-weight: 600;
+  display: inline-flex; align-items: center; gap: 6px;
+  text-decoration: none;
+  font: inherit; font-weight: 600; font-size: 14px;
   border-radius: 8px; padding: 9px 16px;
   background: var(--accent); color: #fff;
 }
-button.btn:hover { background: var(--accent-strong); }
-button.btn.ghost {
+.btn:hover { background: var(--accent-strong); }
+.btn.ghost {
   background: none; color: var(--ink-2);
   border: 1px solid var(--baseline);
 }
-button.btn.ghost:hover { color: var(--ink); border-color: var(--muted); }
-button.btn.small { padding: 5px 10px; font-size: 13px; }
-button.btn.danger-ghost { background: none; border: 1px solid var(--baseline); color: var(--bad-text); }
+.btn.ghost:hover { color: var(--ink); border-color: var(--muted); }
+.btn.small { padding: 5px 10px; font-size: 13px; }
+.btn.danger-ghost { background: none; border: 1px solid var(--baseline); color: var(--bad-text); }
 
 /* ===== tabelas ===== */
 .table-wrap { overflow-x: auto; }

@@ -265,5 +265,74 @@ const Charts = (() => {
     ]);
   }
 
-  return { groupedColumns, categoryBars, projectionChart, money, moneyShort, monthLabel };
+  /* === 4. Linha única: evolução do saldo acumulado (com área) === */
+  function wealthChart(container, months) {
+    const { box, tip } = setupBox(container);
+    if (months.length < 2) {
+      box.innerHTML = '<p class="empty">Registre pelo menos dois meses de lançamentos para ver sua evolução.</p>';
+      return;
+    }
+    const W = 720, H = 240;
+    const layout = { left: 72, right: 14, top: 14, bottom: 30, W, H };
+    const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, width: '100%', role: 'img' });
+    box.appendChild(svg);
+
+    const values = months.map((m) => m.cumulative);
+    const ticks = niceTicks(Math.min(0, ...values), Math.max(1, ...values));
+    const lo = ticks[0], hi = ticks[ticks.length - 1];
+    const plotH = H - layout.top - layout.bottom;
+    const yScale = (v) => layout.top + plotH * (1 - (v - lo) / (hi - lo));
+
+    frame(svg, layout, ticks, yScale, moneyShort);
+    const zeroY = yScale(0);
+    el('line', { x1: layout.left, x2: W - layout.right, y1: zeroY, y2: zeroY, stroke: css('--baseline'), 'stroke-width': 1 }, svg);
+
+    const plotW = W - layout.left - layout.right;
+    const band = plotW / months.length;
+    const color = css('--accent');
+    const pts = months.map((m, i) => [layout.left + band * i + band / 2, yScale(m.cumulative)]);
+    const lineD = pts.map((p, i) => `${i ? 'L' : 'M'} ${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(' ');
+
+    // área: lavagem de 10% da cor da série até a linha do zero
+    el('path', {
+      d: `${lineD} L ${pts[pts.length - 1][0].toFixed(1)} ${zeroY} L ${pts[0][0].toFixed(1)} ${zeroY} Z`,
+      fill: color, opacity: 0.1,
+    }, svg);
+    el('path', { d: lineD, fill: 'none', stroke: color, 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }, svg);
+
+    const last = pts[pts.length - 1];
+    el('circle', { cx: last[0], cy: last[1], r: 6, fill: css('--surface') }, svg);
+    el('circle', { cx: last[0], cy: last[1], r: 4, fill: color }, svg);
+    const endLbl = el('text', {
+      x: last[0], y: last[1] - 10, 'text-anchor': 'end',
+      'font-size': 11.5, 'font-weight': 600, fill: css('--ink'),
+    }, svg);
+    endLbl.textContent = moneyShort(months[months.length - 1].cumulative);
+
+    // rótulos de mês (no máximo 8)
+    months.forEach((m, i) => {
+      if (i % Math.ceil(months.length / 8) === 0) {
+        const lbl = el('text', { x: layout.left + band * i + band / 2, y: H - 8, 'text-anchor': 'middle', 'font-size': 10.5, fill: css('--muted') }, svg);
+        lbl.textContent = monthLabel(m.month);
+      }
+    });
+
+    // crosshair + tooltip
+    const cross = el('line', { y1: layout.top, y2: H - layout.bottom, stroke: css('--baseline'), 'stroke-width': 1, opacity: 0 }, svg);
+    const hover = el('rect', { x: layout.left, y: layout.top, width: plotW, height: plotH, fill: 'transparent' }, svg);
+    hover.addEventListener('mousemove', (e) => {
+      const rect = box.getBoundingClientRect();
+      const px = (e.clientX - rect.left) / rect.width * W;
+      const i = Math.min(months.length - 1, Math.max(0, Math.floor((px - layout.left) / band)));
+      const m = months[i];
+      const cx = layout.left + band * i + band / 2;
+      cross.setAttribute('x1', cx); cross.setAttribute('x2', cx); cross.setAttribute('opacity', 1);
+      showTip(tip, box, cx / W * rect.width, e.clientY - rect.top,
+        `<strong>${monthLabel(m.month)}</strong><br>` +
+        `Resultado do mês: ${money(m.net)}<br>Saldo acumulado: ${money(m.cumulative)}`);
+    });
+    hover.addEventListener('mouseleave', () => { cross.setAttribute('opacity', 0); hideTip(tip); });
+  }
+
+  return { groupedColumns, categoryBars, projectionChart, wealthChart, money, moneyShort, monthLabel };
 })();
