@@ -65,13 +65,28 @@ $('#btn-collapse').addEventListener('click', () => {
 });
 
 /* ---------- visão geral ---------- */
+/* pílula de variação vs mês anterior (▲/▼) */
+function deltaHtml(curr, prev, upIsGood) {
+  if (prev === 0 && curr === 0) return '';
+  if (prev === 0) return '';
+  const diff = curr - prev;
+  if (diff === 0) return '<span class="delta flat">= igual ao mês anterior</span>';
+  const up = diff > 0;
+  const good = up === upIsGood;
+  const arrow = up ? '▲' : '▼';
+  return `<span class="delta ${good ? 'up' : 'down'}">${arrow} ${money(Math.abs(diff))} vs mês anterior</span>`;
+}
+
 async function loadOverview() {
   const s = await api(`/api/summary?month=${state.month}`);
 
+  const prev = s.history.length >= 2 ? s.history[s.history.length - 2] : null;
   $('#tile-income').textContent = money(s.income);
   $('#tile-income').className = 'value pos';
+  $('#delta-income').innerHTML = prev ? deltaHtml(s.income, prev.income, true) : '';
   $('#tile-expense').textContent = money(s.expense);
   $('#tile-expense').className = 'value neg';
+  $('#delta-expense').innerHTML = prev ? deltaHtml(s.expense, prev.expense, false) : '';
   $('#tile-installments').textContent = money(s.installments_due_total);
   $('#tile-installments-hint').textContent = s.installments_due.length
     ? `${s.installments_due.length} parcelamento(s) ativo(s)` : 'nenhuma parcela neste mês';
