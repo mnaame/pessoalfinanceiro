@@ -89,14 +89,14 @@ async function loadOverview() {
   if (!s.installments_due.length) {
     due.innerHTML = '<p class="empty">Nenhuma parcela vence neste mês. 🎉</p>';
   } else {
-    due.innerHTML = `<table>
+    due.innerHTML = `<table class="cards">
       <thead><tr><th>Descrição</th><th>Parcela</th><th class="num">Valor</th><th class="num">Faltam</th></tr></thead>
       <tbody>${s.installments_due.map((i) => `
         <tr>
-          <td>${esc(i.description)}</td>
-          <td><span class="badge">${i.paid_installments + 1} de ${i.total_installments}</span></td>
-          <td class="num">${money(i.installment_cents)}</td>
-          <td class="num">${i.remaining}× (${money(i.remaining_cents)})</td>
+          <td data-label="Descrição">${esc(i.description)}</td>
+          <td data-label="Parcela"><span class="badge">${i.paid_installments + 1} de ${i.total_installments}</span></td>
+          <td class="num" data-label="Valor">${money(i.installment_cents)}</td>
+          <td class="num" data-label="Faltam">${i.remaining}× (${money(i.remaining_cents)})</td>
         </tr>`).join('')}
       </tbody></table>`;
   }
@@ -149,15 +149,15 @@ async function loadTransactions() {
     box.innerHTML = `<p class="empty">Nenhum lançamento em ${fullMonthName(state.month)}. Adicione o primeiro acima.</p>`;
     return;
   }
-  box.innerHTML = `<table>
+  box.innerHTML = `<table class="cards">
     <thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th class="num">Valor</th><th></th></tr></thead>
     <tbody>${rows.map((t) => `
       <tr>
-        <td>${fmtDate(t.date)}</td>
-        <td>${esc(t.description)}${t.recurring ? ' <span class="badge">fixo</span>' : ''}</td>
-        <td>${esc(t.category)}</td>
-        <td class="num ${t.type === 'receita' ? 'amount-pos' : 'amount-neg'}">${t.type === 'receita' ? '+' : '−'} ${money(t.amount_cents)}</td>
-        <td class="num"><button class="btn ghost small" data-del-tx="${t.id}">Excluir</button></td>
+        <td data-label="Data">${fmtDate(t.date)}</td>
+        <td data-label="Descrição">${esc(t.description)}${t.recurring ? ' <span class="badge">fixo</span>' : ''}</td>
+        <td data-label="Categoria">${esc(t.category)}</td>
+        <td class="num ${t.type === 'receita' ? 'amount-pos' : 'amount-neg'}" data-label="Valor">${t.type === 'receita' ? '+' : '−'} ${money(t.amount_cents)}</td>
+        <td class="num actions"><button class="btn ghost small" data-del-tx="${t.id}">Excluir</button></td>
       </tr>`).join('')}
     </tbody></table>`;
   box.querySelectorAll('[data-del-tx]').forEach((b) => {
@@ -200,7 +200,7 @@ async function loadInstallments() {
     box.innerHTML = '<p class="empty">Nenhum parcelamento cadastrado. Adicione compras parceladas, financiamentos ou empréstimos acima.</p>';
     return;
   }
-  box.innerHTML = `<table>
+  box.innerHTML = `<table class="cards">
     <thead><tr>
       <th>Descrição</th><th class="num">Parcela</th><th>Pagas</th>
       <th class="num">Falta pagar</th><th>Próxima</th><th>Termina em</th><th></th>
@@ -208,13 +208,13 @@ async function loadInstallments() {
     <tbody>${rows.map((i) => {
       const done = i.remaining <= 0;
       return `<tr>
-        <td>${esc(i.description)}<br><span class="badge">${esc(i.category)}</span></td>
-        <td class="num">${money(i.installment_cents)}</td>
-        <td>${i.paid_installments} de ${i.total_installments}</td>
-        <td class="num">${done ? '<span class="amount-pos">Quitado ✓</span>' : `${i.remaining}× (${money(i.remaining_cents)})`}</td>
-        <td>${done ? '—' : monthLabel(i.next_due_month)}</td>
-        <td>${done ? '—' : monthLabel(i.last_due_month)}</td>
-        <td class="num" style="white-space:nowrap">
+        <td data-label="Descrição">${esc(i.description)} <span class="badge">${esc(i.category)}</span></td>
+        <td class="num" data-label="Parcela">${money(i.installment_cents)}</td>
+        <td data-label="Pagas">${i.paid_installments} de ${i.total_installments}</td>
+        <td class="num" data-label="Falta pagar">${done ? '<span class="amount-pos">Quitado ✓</span>' : `${i.remaining}× (${money(i.remaining_cents)})`}</td>
+        <td data-label="Próxima">${done ? '—' : monthLabel(i.next_due_month)}</td>
+        <td data-label="Termina em">${done ? '—' : monthLabel(i.last_due_month)}</td>
+        <td class="num actions" style="white-space:nowrap">
           ${done ? '' : `<button class="btn small" data-pay="${i.id}">Pagar parcela</button>`}
           ${i.paid_installments > 0 ? `<button class="btn ghost small" data-unpay="${i.id}" title="Desfazer pagamento">↩</button>` : ''}
           <button class="btn danger-ghost small" data-del-inst="${i.id}">Excluir</button>
@@ -271,17 +271,17 @@ async function loadDebts() {
     box.innerHTML = '<p class="empty">Nenhuma dívida anotada. Registre acima quem te deve ou a quem você deve.</p>';
     return;
   }
-  box.innerHTML = `<table>
+  box.innerHTML = `<table class="cards">
     <thead><tr><th>Tipo</th><th>Pessoa</th><th>Motivo</th><th class="num">Valor</th><th>Combinado para</th><th>Situação</th><th></th></tr></thead>
     <tbody>${d.items.map((i) => `
       <tr style="${i.paid ? 'opacity:.55' : ''}">
-        <td><span class="badge">${i.direction === 'a_receber' ? '↙ me devem' : '↗ eu devo'}</span></td>
-        <td>${esc(i.person)}</td>
-        <td>${esc(i.description) || '—'}</td>
-        <td class="num ${i.direction === 'a_receber' ? 'amount-pos' : 'amount-neg'}">${money(i.amount_cents)}</td>
-        <td>${i.due_date ? fmtDate(i.due_date) : '—'}</td>
-        <td>${i.paid ? '<span class="amount-pos">Quitada ✓</span>' : 'Em aberto'}</td>
-        <td class="num" style="white-space:nowrap">
+        <td data-label="Tipo"><span class="badge">${i.direction === 'a_receber' ? '↙ me devem' : '↗ eu devo'}</span></td>
+        <td data-label="Pessoa">${esc(i.person)}</td>
+        <td data-label="Motivo">${esc(i.description) || '—'}</td>
+        <td class="num ${i.direction === 'a_receber' ? 'amount-pos' : 'amount-neg'}" data-label="Valor">${money(i.amount_cents)}</td>
+        <td data-label="Combinado para">${i.due_date ? fmtDate(i.due_date) : '—'}</td>
+        <td data-label="Situação">${i.paid ? '<span class="amount-pos">Quitada ✓</span>' : 'Em aberto'}</td>
+        <td class="num actions" style="white-space:nowrap">
           <button class="btn ${i.paid ? 'ghost' : ''} small" data-toggle-debt="${i.id}">${i.paid ? 'Reabrir' : 'Marcar quitada'}</button>
           <button class="btn danger-ghost small" data-del-debt="${i.id}">Excluir</button>
         </td>
@@ -378,9 +378,11 @@ $('#tx-month-picker').addEventListener('change', (e) => {
   refresh();
 });
 
-$('#btn-logout').addEventListener('click', async () => {
-  await fetch('/api/logout', { method: 'POST' });
-  location.href = '/login.html';
+document.querySelectorAll('.js-logout').forEach((b) => {
+  b.addEventListener('click', async () => {
+    await fetch('/api/logout', { method: 'POST' });
+    location.href = '/login.html';
+  });
 });
 
 /* ---------- inicialização ---------- */
