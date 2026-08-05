@@ -150,7 +150,7 @@ function projectionSentence(p) {
   }
   const parts = [];
   if (p.active_installments > 0 && p.debt_free_month) {
-    parts.push(`Sua última parcela termina em <strong>${fullMonthName(p.debt_free_month)}</strong> — a partir daí sobram <strong>${money(p.monthly_gain_after_debt)}</strong> por mês.`);
+    parts.push(`Você fica livre de parcelas a partir de <strong>${fullMonthName(p.debt_free_month)}</strong> — a partir daí sobram <strong>${money(p.monthly_gain_after_debt)}</strong> por mês.`);
   } else if (p.active_installments === 0) {
     parts.push(`Você não tem parcelas pendentes — sua sobra estimada é de <strong>${money(p.monthly_gain_after_debt)}</strong> por mês.`);
   }
